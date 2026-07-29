@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="description" content="Upcoming barangay events, clean-up drives and community activities." />
+<meta name="robots" content="index,follow" />
+<meta name="theme-color" content="#293681" />
+<title>Events — ComSol</title>
+<link rel="icon" href="images/logo.png" type="image/png" />
+<link rel="apple-touch-icon" href="images/logo.png" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="app-root">
+  <div class="section-block-head">
+    <h3>Upcoming Events</h3>
+  </div>
+  <p style="color:var(--text-muted);font-size:14px;margin:-4px 0 20px">View schedules, get event details, and set reminders for community activities.</p>
+  <div class="list-stack" id="list"></div>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  ComSol.requireAuth();
+  const REMIND_KEY = 'comsol.reminders';
+  const reminders = new Set(JSON.parse(Store.get(REMIND_KEY) || '[]'));
+
+  function render() {
+    document.getElementById('list').innerHTML = ComSol.getEvents().map(ev => {
+      const d = new Date(ev.date);
+      const day = d.getDate();
+      const mon = d.toLocaleDateString(undefined, { month: 'short' }).toUpperCase();
+      const on = reminders.has(ev.id);
+      return `
+        <div class="list-card">
+          <div class="lc-ico" style="flex-direction:column;background:var(--primary);color:#fff;font-weight:700">
+            <div style="font-size:11px;letter-spacing:.06em">${mon}</div>
+            <div style="font-size:20px;line-height:1">${day}</div>
+          </div>
+          <div class="lc-body">
+            <div class="lc-title">${ev.title}</div>
+            <div class="lc-text">${ev.body}</div>
+            <div class="lc-meta">
+              <span><strong>Date:</strong> ${d.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+              <span><strong>Time:</strong> ${ev.time}</span>
+              <span><strong>Location:</strong> ${ev.location}</span>
+            </div>
+          </div>
+          <div class="lc-actions">
+            <button class="btn ${on ? 'btn-ghost' : ''}" data-id="${ev.id}">
+              ${on ? 'Reminder set ✓' : 'Remind me'}
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Bind after the shell rebuilds <body>, otherwise the listener is lost.
+  renderShell({ active: 'events', title: 'Events' });
+
+  document.getElementById('list').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-id]'); if (!b) return;
+    const id = Number(b.dataset.id);
+    if (reminders.has(id)) {
+      reminders.delete(id);
+      ComSol.toast('Reminder removed.');
+    } else {
+      reminders.add(id);
+      ComSol.toast('Reminder set — we\'ll notify you.');
+    }
+    Store.set(REMIND_KEY, JSON.stringify([...reminders]));
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>

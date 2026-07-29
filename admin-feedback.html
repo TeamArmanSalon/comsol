@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="Read and reply to resident feedback." />
+<meta name="robots" content="index,follow" />
+<meta name="theme-color" content="#293681" />
+    <title>Resident Feedback — ComSol Admin</title>
+<link rel="icon" href="images/logo.png" type="image/png" />
+<link rel="apple-touch-icon" href="images/logo.png" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div id="app-root">
+      <div class="section-block-head">
+        <h3>Resident Feedback Inbox</h3>
+      </div>
+      <p style="color: var(--text-muted); font-size: 14px; margin: -4px 0 20px">
+        Suggestions, complaints, and compliments submitted through the Feedback
+        module. Replies are shown to the resident on their Feedback page.
+      </p>
+
+      <div class="stats-grid" id="fbStats"></div>
+
+      <div class="tabs" id="tabs" style="margin-top: 20px">
+        <button class="tab active" data-f="all">All</button>
+        <button class="tab" data-f="open">Needs Reply</button>
+        <button class="tab" data-f="resolved">Replied</button>
+      </div>
+
+      <div class="list-stack" id="inbox"></div>
+    </div>
+
+    <!-- Reply modal -->
+    <div class="modal-scrim" id="replyModal">
+      <div class="modal modal-detail" id="replyBody"></div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/admin.js"></script>
+    <script>
+      ComSol.requireAdmin();
+      // Build the admin shell first so every listener below binds to live nodes.
+      renderAdminShell({ active: "feedback", title: "Resident Feedback" });
+
+      let filter = "all";
+
+      function renderStats() {
+        const all = ComSol.getFeedback();
+        const byType = (t) =>
+          all.filter((f) => (f.type || "").toLowerCase() === t).length;
+        document.getElementById("fbStats").innerHTML = [
+          { lbl: "Total Feedback", val: all.length, cls: "" },
+          {
+            lbl: "Needs Reply",
+            val: all.filter((f) => f.state !== "resolved").length,
+            cls: "pending",
+          },
+          { lbl: "Suggestions", val: byType("suggestion"), cls: "review" },
+          { lbl: "Compliments", val: byType("compliment"), cls: "resolved" },
+        ]
+          .map(
+            (c) => `
+        <div class="stat-card ${c.cls}">
+          <div class="lbl">${c.lbl}</div>
+          <div class="val">${c.val}</div>
+        </div>`,
+          )
+          .join("");
+      }
+
+      function visible() {
+        return ComSol.getFeedback().filter((f) =>
+          filter === "all"
+            ? true
+            : filter === "resolved"
+              ? f.state === "resolved"
+              : f.state !== "resolved",
+        );
+      }
+
+      function render() {
+        const list = visible();
+        document.getElementById("inbox").innerHTML = list.length
+          ? list
+              .map(
+                (f) => `
+        <div class="list-card">
+          <div class="lc-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <div class="lc-body">
+            <span class="tag">${f.type}</span>
+            <span class="badge ${f.state === "resolved" ? "resolved" : "pending"}">${f.state === "resolved" ? "Replied" : "Needs Reply"}</span>
+            <div class="lc-title">${f.subject}</div>
+            <div class="lc-text">${f.message}</div>
+            ${
+              f.reply
+                ? `<div class="reply-box"><strong>Official reply</strong><p>${f.reply}</p><span>${ComSol.formatFullDate(f.replyDate)}</span></div>`
+                : ""
+            }
+            <div class="lc-meta"><span>Received ${ComSol.formatFullDate(f.date)}</span></div>
+          </div>
+          <div class="lc-actions">
+            <button class="btn btn-ghost" data-id="${f.id}">${f.reply ? "Edit reply" : "Reply"}</button>
+          </div>
+        </div>`,
+              )
+              .join("")
+          : `<div class="empty"><p>No feedback in this view.</p></div>`;
+        renderStats();
+      }
+
+      function openReply(id) {
+        const f = ComSol.getFeedback().find((x) => String(x.id) === String(id));
+        if (!f) return;
+        document.getElementById("replyBody").innerHTML = `
+        <h3 style="text-align:left;margin-bottom:4px">${f.subject}</h3>
+        <p style="text-align:left;margin-bottom:14px;color:var(--text-muted);font-size:13px">
+          <span class="tag">${f.type}</span> &nbsp;·&nbsp; ${ComSol.formatFullDate(f.date)}
+        </p>
+        <p style="text-align:left;margin-bottom:16px">${f.message}</p>
+
+        <h4 class="modal-sub">Reply to the resident</h4>
+        <div class="form-group">
+          <textarea class="form-textarea form-input" id="replyText" maxlength="400"
+            placeholder="e.g. Thank you for the suggestion — it will be raised at the next barangay assembly.">${f.reply || ""}</textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="closeReply">Cancel</button>
+          ${f.state === "resolved" ? '<button class="btn btn-ghost" id="reopen">Mark as open</button>' : ""}
+          <button class="btn" id="sendReply">Send Reply</button>
+        </div>`;
+        document.getElementById("replyModal").classList.add("open");
+
+        document
+          .getElementById("closeReply")
+          .addEventListener("click", closeReply);
+        const reopen = document.getElementById("reopen");
+        if (reopen)
+          reopen.addEventListener("click", () => {
+            ComSol.setFeedbackState(f.id, "open");
+            closeReply();
+            render();
+          });
+        document.getElementById("sendReply").addEventListener("click", () => {
+          const text = document.getElementById("replyText").value.trim();
+          if (!text) {
+            ComSol.toast("Please write a reply first.");
+            return;
+          }
+          ComSol.replyFeedback(f.id, text);
+          closeReply();
+          render();
+          ComSol.toast("Reply sent — the resident can now see it.");
+        });
+      }
+
+      function closeReply() {
+        document.getElementById("replyModal").classList.remove("open");
+      }
+
+      document.getElementById("tabs").addEventListener("click", (e) => {
+        const b = e.target.closest(".tab");
+        if (!b) return;
+        document
+          .querySelectorAll("#tabs .tab")
+          .forEach((t) => t.classList.remove("active"));
+        b.classList.add("active");
+        filter = b.dataset.f;
+        render();
+      });
+      document.getElementById("inbox").addEventListener("click", (e) => {
+        const b = e.target.closest("button[data-id]");
+        if (b) openReply(b.dataset.id);
+      });
+      document.getElementById("replyModal").addEventListener("click", (e) => {
+        if (e.target.id === "replyModal") closeReply();
+      });
+
+      render();
+    </script>
+  </body>
+</html>

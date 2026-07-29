@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="Manage community projects and events." />
+<meta name="robots" content="index,follow" />
+<meta name="theme-color" content="#293681" />
+    <title>Projects &amp; Events — ComSol Admin</title>
+<link rel="icon" href="images/logo.png" type="image/png" />
+<link rel="apple-touch-icon" href="images/logo.png" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div id="app-root">
+      <div class="section-block-head"><h3>Projects &amp; Events</h3></div>
+      <p style="color: var(--text-muted); font-size: 14px; margin: -4px 0 16px">
+        Anything published here appears instantly on the resident Community
+        Projects and Events pages.
+      </p>
+
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-t="projects">Community Projects</button>
+        <button class="tab" data-t="events">Community Events</button>
+      </div>
+
+      <!-- ---------- Projects ---------- -->
+      <section id="pane-projects">
+        <form class="form-card" id="projForm">
+          <h2>Add a Community Project</h2>
+          <p class="subtitle">
+            Track infrastructure and community work for residents.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">Project title</label>
+            <input
+              class="form-input"
+              id="pTitle"
+              placeholder="e.g. Drainage Improvement — Zone 2"
+              required
+              maxlength="90"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea
+              class="form-textarea form-input"
+              id="pBody"
+              placeholder="What is being done and why…"
+              required
+              maxlength="400"
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Location</label>
+            <input
+              class="form-input"
+              id="pLoc"
+              placeholder="e.g. Zone 2, Sampaguita St."
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select class="form-select form-input" id="pStatus">
+              <option value="ongoing">Ongoing</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label"
+              >Progress — <span id="pVal">0</span>%</label
+            >
+            <input
+              type="range"
+              id="pProgress"
+              min="0"
+              max="100"
+              step="5"
+              value="0"
+              style="width: 100%"
+            />
+          </div>
+
+          <button class="btn" type="submit">Publish Project</button>
+        </form>
+
+        <div class="section-block" style="margin-top: 28px">
+          <div class="section-block-head"><h3>Published Projects</h3></div>
+          <div class="list-stack" id="projList"></div>
+        </div>
+      </section>
+
+      <!-- ---------- Events ---------- -->
+      <section id="pane-events" style="display: none">
+        <form class="form-card" id="evForm">
+          <h2>Schedule a Community Event</h2>
+          <p class="subtitle">
+            Residents can set reminders for events you publish.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">Event title</label>
+            <input
+              class="form-input"
+              id="eTitle"
+              placeholder="e.g. Free Vaccination Day"
+              required
+              maxlength="90"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Details</label>
+            <textarea
+              class="form-textarea form-input"
+              id="eBody"
+              placeholder="Who it's for and what to bring…"
+              required
+              maxlength="400"
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input class="form-input" type="date" id="eDate" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Time</label>
+            <input
+              class="form-input"
+              id="eTime"
+              placeholder="e.g. 8:00 AM"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Venue</label>
+            <input
+              class="form-input"
+              id="eLoc"
+              placeholder="e.g. Barangay Health Center"
+              required
+            />
+          </div>
+
+          <button class="btn" type="submit">Publish Event</button>
+        </form>
+
+        <div class="section-block" style="margin-top: 28px">
+          <div class="section-block-head"><h3>Scheduled Events</h3></div>
+          <div class="list-stack" id="evList"></div>
+        </div>
+      </section>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/admin.js"></script>
+    <script>
+      ComSol.requireAdmin();
+      // Build the admin shell first so every listener below binds to live nodes.
+      renderAdminShell({ active: "projects", title: "Projects & Events" });
+
+      /* ---- Tabs ---- */
+      document.getElementById("tabs").addEventListener("click", (e) => {
+        const b = e.target.closest(".tab");
+        if (!b) return;
+        document
+          .querySelectorAll("#tabs .tab")
+          .forEach((t) => t.classList.remove("active"));
+        b.classList.add("active");
+        const isProjects = b.dataset.t === "projects";
+        document.getElementById("pane-projects").style.display = isProjects
+          ? ""
+          : "none";
+        document.getElementById("pane-events").style.display = isProjects
+          ? "none"
+          : "";
+      });
+
+      /* ---- Projects ---- */
+      const progress = document.getElementById("pProgress");
+      progress.addEventListener("input", () => {
+        document.getElementById("pVal").textContent = progress.value;
+      });
+
+      function renderProjects() {
+        // Only admin-created entries can be edited or deleted.
+        const own = ComSol.getExtra(ComSol.KEY_XPROJECTS);
+        const list = ComSol.getProjects();
+        document.getElementById("projList").innerHTML = list.length
+          ? list
+              .map((p) => {
+                const editable = own.some((x) => String(x.id) === String(p.id));
+                return `
+        <div class="list-card">
+          <div class="lc-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"/></svg></div>
+          <div class="lc-body">
+            <span class="tag ${p.status}">${p.status === "ongoing" ? "Ongoing" : "Completed"}</span>
+            <div class="lc-title">${p.title}</div>
+            <div class="lc-text">${p.body}</div>
+            <div class="progress-track"><div class="progress-fill" style="width:${p.progress}%"></div></div>
+            <div class="lc-meta">
+              <span><strong>Location:</strong> ${p.location}</span>
+              <span><strong>Progress:</strong> ${p.progress}%</span>
+            </div>
+          </div>
+          <div class="lc-actions">
+            ${
+              editable
+                ? `<button class="btn btn-ghost" data-bump="${p.id}">+10%</button>
+                   <button class="btn btn-danger" data-delp="${p.id}">Delete</button>`
+                : `<span class="tag">Built-in</span>`
+            }
+          </div>
+        </div>`;
+              })
+              .join("")
+          : `<div class="empty"><p>No projects published yet.</p></div>`;
+      }
+
+      document.getElementById("projForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        ComSol.addProject({
+          title: document.getElementById("pTitle").value.trim(),
+          body: document.getElementById("pBody").value.trim(),
+          location: document.getElementById("pLoc").value.trim(),
+          status: document.getElementById("pStatus").value,
+          progress: Number(progress.value),
+        });
+        e.target.reset();
+        document.getElementById("pVal").textContent = "0";
+        renderProjects();
+        ComSol.toast("Project published to the resident site.");
+      });
+
+      document.getElementById("projList").addEventListener("click", (e) => {
+        const del = e.target.closest("[data-delp]");
+        if (del) {
+          if (!confirm("Delete this project?")) return;
+          ComSol.deleteProject(del.dataset.delp);
+          renderProjects();
+          ComSol.toast("Project deleted.");
+          return;
+        }
+        const bump = e.target.closest("[data-bump]");
+        if (bump) {
+          const p = ComSol.getProjects().find(
+            (x) => String(x.id) === bump.dataset.bump,
+          );
+          const next = Math.min(100, (p.progress || 0) + 10);
+          ComSol.updateProject(p.id, {
+            progress: next,
+            status: next === 100 ? "completed" : "ongoing",
+          });
+          renderProjects();
+        }
+      });
+
+      /* ---- Events ---- */
+      function renderEvents() {
+        const own = ComSol.getExtra(ComSol.KEY_XEVENTS);
+        const list = ComSol.getEvents();
+        document.getElementById("evList").innerHTML = list.length
+          ? list
+              .map((ev) => {
+                const d = new Date(ev.date);
+                const editable = own.some(
+                  (x) => String(x.id) === String(ev.id),
+                );
+                return `
+        <div class="list-card">
+          <div class="lc-ico" style="flex-direction:column;background:var(--primary);color:#fff;font-weight:700">
+            <div style="font-size:11px;letter-spacing:.06em">${d.toLocaleDateString(undefined, { month: "short" }).toUpperCase()}</div>
+            <div style="font-size:20px;line-height:1">${d.getDate()}</div>
+          </div>
+          <div class="lc-body">
+            <div class="lc-title">${ev.title}</div>
+            <div class="lc-text">${ev.body}</div>
+            <div class="lc-meta">
+              <span><strong>Time:</strong> ${ev.time}</span>
+              <span><strong>Venue:</strong> ${ev.location}</span>
+            </div>
+          </div>
+          <div class="lc-actions">
+            ${
+              editable
+                ? `<button class="btn btn-danger" data-dele="${ev.id}">Delete</button>`
+                : `<span class="tag">Built-in</span>`
+            }
+          </div>
+        </div>`;
+              })
+              .join("")
+          : `<div class="empty"><p>No events scheduled yet.</p></div>`;
+      }
+
+      document.getElementById("evForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        ComSol.addEvent({
+          title: document.getElementById("eTitle").value.trim(),
+          body: document.getElementById("eBody").value.trim(),
+          date: new Date(
+            document.getElementById("eDate").value + "T00:00:00",
+          ).getTime(),
+          time: document.getElementById("eTime").value.trim(),
+          location: document.getElementById("eLoc").value.trim(),
+        });
+        e.target.reset();
+        renderEvents();
+        ComSol.toast("Event published to the resident site.");
+      });
+
+      document.getElementById("evList").addEventListener("click", (e) => {
+        const del = e.target.closest("[data-dele]");
+        if (!del) return;
+        if (!confirm("Delete this event?")) return;
+        ComSol.deleteEvent(del.dataset.dele);
+        renderEvents();
+        ComSol.toast("Event deleted.");
+      });
+
+      renderProjects();
+      renderEvents();
+    </script>
+  </body>
+</html>

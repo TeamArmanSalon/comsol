@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="description" content="Track the status of every report you submitted to the barangay office." />
+<meta name="robots" content="index,follow" />
+<meta name="theme-color" content="#293681" />
+<title>My Reports — ComSol</title>
+<link rel="icon" href="images/logo.png" type="image/png" />
+<link rel="apple-touch-icon" href="images/logo.png" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="app-root">
+  <div class="section-block-head">
+    <h3>Track My Reports</h3>
+    <a href="create.html" class="badge review" style="padding:8px 14px">+ New Report</a>
+  </div>
+  <p style="color:var(--text-muted);font-size:14px;margin:-4px 0 16px">Monitor the status and history of every issue you have submitted.</p>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-f="all">All</button>
+    <button class="tab" data-f="pending">Pending</button>
+    <button class="tab" data-f="review">Under Review</button>
+    <button class="tab" data-f="progress">In Progress</button>
+    <button class="tab" data-f="resolved">Resolved</button>
+    <button class="tab" data-f="rejected">Rejected</button>
+  </div>
+
+  <div id="list"></div>
+</div>
+
+<!-- Detail modal -->
+<div class="modal-scrim" id="detailModal">
+  <div class="modal modal-detail" id="detailBody"></div>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  ComSol.requireAuth();
+
+  let filter = 'all';
+
+  function render() {
+    const all = ComSol.getReports();
+    const items = filter === 'all' ? all : all.filter(r => r.status === filter);
+    const list = document.getElementById('list');
+    if (!items.length) {
+      list.innerHTML = `<div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        <p>No reports in this category yet.</p>
+      </div>`;
+      return;
+    }
+    list.innerHTML = `<div class="reports-grid">${items.map(r => `
+      <div class="report-card" id="report-${r.id}">
+        <div class="report-thumb" ${r.image ? `style="background-image:url('${r.image}');background-position:${r.imagePos || '50% 50%'}"` : ''}>
+          ${!r.image ? ComSol.categoryIcon(ComSol.categoryIconKey(r.category), 32) : ''}
+          <span class="badge ${r.status}">${ComSol.statusLabel(r.status)}</span>
+        </div>
+        <div class="report-body">
+          <div class="cat">${r.category}</div>
+          <div class="title">${r.title}</div>
+          <div class="desc">${r.description || ''}</div>
+          <div class="meta">
+            <span class="ref-chip">${r.ref || ''}</span>
+            <a class="details-link" href="#" data-id="${r.id}">Details →</a>
+          </div>
+        </div>
+      </div>
+    `).join('')}</div>`;
+  }
+
+  function bindEvents() {
+    document.getElementById('tabs').addEventListener('click', (e) => {
+      const b = e.target.closest('.tab'); if (!b) return;
+      document.querySelectorAll('#tabs .tab').forEach(t => t.classList.remove('active'));
+      b.classList.add('active');
+      filter = b.dataset.f;
+      render();
+    });
+
+    document.getElementById('list').addEventListener('click', (e) => {
+      const a = e.target.closest('.details-link'); if (!a) return;
+      e.preventDefault();
+      const r = ComSol.getReports().find(x => String(x.id) === a.dataset.id);
+      if (!r) return;
+      const history = (r.history || []).slice().reverse();
+      const isDone = (s) => s === 'resolved' || s === 'rejected';
+      document.getElementById('detailBody').innerHTML = `
+        ${r.image ? `<img src="${r.image}" alt="Report photo" loading="lazy" decoding="async" style="object-position:${r.imagePos || '50% 50%'}" />` : ''}
+        <h3 style="text-align:left; margin-bottom:4px">${r.title}</h3>
+        <p style="text-align:left; margin-bottom:14px; color:var(--text-muted); font-size:13px">
+          <span class="badge ${r.status}">${ComSol.statusLabel(r.status)}</span>
+          &nbsp;·&nbsp; ${r.category}
+          &nbsp;·&nbsp; <span class="ref-chip">${r.ref || ''}</span>
+        </p>
+        <dl>
+          <dt>Description</dt><dd style="grid-column: 1 / -1">${r.description || '—'}</dd>
+          <dt>Location</dt><dd>${r.location || '—'}</dd>
+          <dt>Submitted</dt><dd>${new Date(r.date).toLocaleString()}</dd>
+        </dl>
+        <h4 style="color:var(--primary);font-size:14px;font-weight:700;margin:8px 0 12px;text-transform:uppercase;letter-spacing:.06em">History &amp; Updates</h4>
+        <div class="timeline">
+          ${history.map((h, i) => `
+            <div class="timeline-item ${i === 0 && isDone(h.status) ? 'done' : ''}">
+              <div class="tl-status">${ComSol.statusLabel(h.status)}</div>
+              <div class="tl-date">${ComSol.formatFullDate(h.ts)}</div>
+              <div class="tl-note">${h.note || ''}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" onclick="document.getElementById('detailModal').classList.remove('open')">Close</button>
+        </div>
+      `;
+      document.getElementById('detailModal').classList.add('open');
+    });
+
+    document.getElementById('detailModal').addEventListener('click', (e) => {
+      if (e.target.id === 'detailModal') e.currentTarget.classList.remove('open');
+    });
+  }
+
+  renderShell({ active: 'reports', title: 'My Reports' });
+  ComSol.highlightHash();
+  render();
+  bindEvents();
+</script>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="description" content="Manage your ComSol account, barangay details, notifications, appearance and privacy settings." />
+<meta name="robots" content="index,follow" />
+<meta name="theme-color" content="#293681" />
+<title>Settings — ComSol</title>
+<link rel="icon" href="images/logo.png" type="image/png" />
+<link rel="apple-touch-icon" href="images/logo.png" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="app-root">
+  <div class="page-head">
+    <h2>Settings</h2>
+    <p>System and notification preferences. Your personal details live on the <a href="profile.html">Profile</a> page.</p>
+  </div>
+
+  <div class="tabs" id="setTabs">
+    <button class="tab active" data-panel="barangay">Barangay &amp; Location</button>
+    <button class="tab" data-panel="notifications">Notifications</button>
+    <button class="tab" data-panel="privacy">Privacy &amp; Security</button>
+    <button class="tab" data-panel="data">Data</button>
+    <button class="tab" data-panel="admin" id="adminTab" style="display:none">Admin</button>
+  </div>
+
+
+  <!-- Barangay -->
+  <section class="set-panel" data-panel="barangay">
+    <div class="settings-card">
+      <h3>Barangay details</h3>
+      <div class="sc-sub">Used to route your reports to the right barangay desk and to fill in report locations.</div>
+      <div class="set-row">
+        <div class="sr-body"><div class="sr-t">Barangay</div><div class="sr-d">The barangay you belong to.</div></div>
+        <div class="sr-ctl"><input class="form-input" id="p-barangay" placeholder="Barangay San Isidro" /></div>
+      </div>
+      <div class="set-row">
+        <div class="sr-body"><div class="sr-t">Purok / Zone / Sitio</div><div class="sr-d">Optional. Helps officials pinpoint your area.</div></div>
+        <div class="sr-ctl"><input class="form-input" id="p-purok" placeholder="Purok 3" /></div>
+      </div>
+      <div class="set-row">
+        <div class="sr-body"><div class="sr-t">Saved report location</div><div class="sr-d">When set, "Report an Issue" uses this location automatically. Leave it empty to type the location yourself on every report.</div></div>
+        <div class="sr-ctl"><input class="form-input" id="p-defloc" placeholder="Street / landmark" /></div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- Notifications -->
+  <section class="set-panel" data-panel="notifications" hidden>
+    <div class="settings-card">
+      <h3>Notifications</h3>
+      <div class="sc-sub">Choose what ComSol alerts you about.</div>
+      <div class="set-row">
+        <div class="sr-body"><div class="sr-t">Report status updates</div><div class="sr-d">When a report you filed changes status.</div></div>
+        <label class="switch"><input type="checkbox" id="n-status" /><span class="track"></span></label>
+      </div>
+      <div class="set-row">
+        <div class="sr-body"><div class="sr-t">Barangay announcements</div><div class="sr-d">New posts from barangay officials.</div></div>
+        <label class="switch"><input type="checkbox" id="n-ann" /><span class="track"></span></label>
+      </div>
+      <div class="set-row">
+        <div class="sr-body"><div class="sr-t">Events</div><div class="sr-d">Assemblies, clean-up drives, medical missions.</div></div>
+        <label class="switch"><input type="checkbox" id="n-events" /><span class="track"></span></label>
+      </div>
+      <div class="set-row">
+        <div class="sr-body"><div class="sr-t">Emergency alerts</div><div class="sr-d">Strongly recommended — typhoon, flood and safety advisories.</div></div>
+        <label class="switch"><input type="checkbox" id="n-emg" /><span class="track"></span></label>
+      </div>
+    </div>
+  </section>
+
+  <!-- (Appearance panel removed — the app has one consistent appearance.) -->
+
+
+
+  <!-- Privacy & Security -->
+  <section class="set-panel" data-panel="privacy" hidden>
+    <div class="settings-card">
+      <h3>Privacy &amp; security</h3>
+      <div class="sc-sub">Control how your identity appears on reports.</div>
+      <div class="set-row">
+        <div class="sr-body"><div class="sr-t">Submit reports anonymously by default</div><div class="sr-d">Your name is hidden from the public list; officials still see it.</div></div>
+        <label class="switch"><input type="checkbox" id="s-anon" /><span class="track"></span></label>
+      </div>
+      <div class="set-row">
+        <div class="sr-body"><div class="sr-t">Share contact number with officials</div><div class="sr-d">Lets the barangay call you for follow-ups.</div></div>
+        <label class="switch"><input type="checkbox" id="s-contact" /><span class="track"></span></label>
+      </div>
+      <div class="set-row">
+        <div class="sr-body"><div class="sr-t">Password</div><div class="sr-d">Passwords are managed with your account details.</div></div>
+        <div class="sr-ctl"><a class="btn btn-ghost" href="profile.html" style="background:#fff">Go to Profile</a></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Data -->
+  <section class="set-panel" data-panel="data" hidden>
+    <div class="settings-card">
+      <h3>Your data</h3>
+      <div class="sc-sub">Everything is stored on this device for the prototype.</div>
+      <div class="set-row">
+        <div class="sr-body"><div class="sr-t">Download my data</div><div class="sr-d">Profile, preferences, reports and feedback as JSON.</div></div>
+        <div class="sr-ctl"><button class="btn" id="d-export">Download JSON</button></div>
+      </div>
+      <div class="set-row">
+        <div class="sr-body"><div class="sr-t">Export my reports</div><div class="sr-d">Spreadsheet-friendly CSV file.</div></div>
+        <div class="sr-ctl"><button class="btn btn-ghost" id="d-csv" style="background:#fff">Export CSV</button></div>
+      </div>
+    </div>
+    <div class="settings-card settings-danger">
+      <h3>Danger zone</h3>
+      <div class="sc-sub">These actions cannot be undone.</div>
+      <div class="set-row">
+        <div class="sr-body"><div class="sr-t">Reset settings</div><div class="sr-d">Restores all preferences to their defaults.</div></div>
+        <div class="sr-ctl"><button class="btn btn-ghost" id="d-reset" style="background:#fff">Reset</button></div>
+      </div>
+      <div class="set-row">
+        <div class="sr-body"><div class="sr-t">Clear local data</div><div class="sr-d">Deletes reports and feedback saved on this device, then signs you out.</div></div>
+        <div class="sr-ctl"><button class="btn btn-danger" id="d-clear">Clear data</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Admin -->
+  <section class="set-panel" data-panel="admin" hidden>
+    <div class="settings-card">
+      <h3>Administrator preferences</h3>
+      <div class="sc-sub">Only visible to barangay staff accounts.</div>
+      <div class="set-row">
+        <div class="sr-body"><div class="sr-t">Default landing page</div><div class="sr-d">Where you land right after signing in.</div></div>
+        <div class="sr-ctl"><select class="form-select" id="ad-landing">
+          <option value="admin.html">Admin dashboard</option>
+          <option value="admin-reports.html">Reports queue</option>
+          <option value="admin-analytics.html">Analytics</option>
+          <option value="home.html">Resident home</option>
+        </select></div>
+      </div>
+      <div class="set-row">
+        <div class="sr-body"><div class="sr-t">Session timeout</div><div class="sr-d">Auto sign-out after inactivity on shared barangay computers.</div></div>
+        <div class="sr-ctl"><select class="form-select" id="ad-timeout">
+          <option value="15">15 minutes</option><option value="30">30 minutes</option>
+          <option value="60">1 hour</option><option value="0">Never</option>
+        </select></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- Profile editing, password changes and account info now live on profile.html -->
+
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  ComSol.requireAuth();
+
+  function openTab(name) {
+    const tabs = document.querySelectorAll('#setTabs .tab');
+    const target = Array.from(tabs).find((t) => t.dataset.panel === name);
+    if (target) target.click();
+  }
+
+  function bindTabs() {
+    const tabs = document.querySelectorAll('#setTabs .tab');
+    tabs.forEach((t) => t.addEventListener('click', () => {
+      tabs.forEach((x) => x.classList.remove('active'));
+      t.classList.add('active');
+      document.querySelectorAll('.set-panel').forEach((p) => {
+        p.hidden = p.dataset.panel !== t.dataset.panel;
+      });
+    }));
+  }
+
+  function bindPrefs() {
+    const p = ComSol.getPrefs();
+    const saved = () => ComSol.toast('Setting saved');
+
+    const text = { 'p-barangay': 'barangay', 'p-purok': 'purok', 'p-defloc': 'defaultLocation' };
+    Object.entries(text).forEach(([id, key]) => {
+      const el = document.getElementById(id);
+      el.value = p[key] || '';
+      el.addEventListener('change', () => { ComSol.setPrefs({ [key]: el.value.trim() }); saved(); });
+    });
+
+    const flags = {
+      'n-status': 'notifyStatus', 'n-ann': 'notifyAnnouncements', 'n-events': 'notifyEvents',
+      'n-emg': 'notifyEmergency', 's-anon': 'anonymousDefault', 's-contact': 'shareContact',
+    };
+    Object.entries(flags).forEach(([id, key]) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.checked = !!p[key];
+      el.addEventListener('change', () => { ComSol.setPrefs({ [key]: el.checked }); saved(); });
+    });
+
+    document.getElementById('d-export').addEventListener('click', () => ComSol.exportMyData());
+    document.getElementById('d-csv').addEventListener('click', () => ComSol.exportReportsCSV());
+    document.getElementById('d-reset').addEventListener('click', () => {
+      if (!confirm('Reset all settings to their defaults?')) return;
+      ComSol.resetPrefs();
+      location.reload();
+    });
+    document.getElementById('d-clear').addEventListener('click', () => {
+      if (!confirm('Delete all reports, feedback and settings saved on this device?')) return;
+      [ComSol.KEY_REPORTS, ComSol.KEY_FEEDBACK, ComSol.KEY_PREFS].forEach((k) => {
+        try { localStorage.removeItem(k); } catch {}
+      });
+      ComSol.toast('Local data cleared');
+      setTimeout(() => ComSol.logout(), 700);
+    });
+
+    // Admin-only section
+    const u = ComSol.getUser() || {};
+    if ((u.role || '').toLowerCase().indexOf('admin') > -1) {
+      document.getElementById('adminTab').style.display = '';
+      const landing = document.getElementById('ad-landing');
+      const timeout = document.getElementById('ad-timeout');
+      landing.value = p.defaultLanding;
+      timeout.value = String(p.sessionTimeout);
+      landing.addEventListener('change', () => { ComSol.setPrefs({ defaultLanding: landing.value }); saved(); });
+      timeout.addEventListener('change', () => { ComSol.setPrefs({ sessionTimeout: timeout.value }); saved(); });
+    }
+  }
+
+  renderShell({ active: 'settings', title: 'Settings' });
+  bindTabs();
+  bindPrefs();
+  if (location.hash) openTab(location.hash.slice(1));
+  window.addEventListener('hashchange', () => openTab(location.hash.slice(1)));
+</script>
+
+</body>
+</html>
