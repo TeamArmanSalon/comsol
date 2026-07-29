@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="description" content="Official barangay announcements, advisories and notices for residents." />
+<meta name="robots" content="index,follow" />
+<meta name="theme-color" content="#293681" />
+<title>Announcements — ComSol</title>
+<link rel="icon" href="images/logo.png" type="image/png" />
+<link rel="apple-touch-icon" href="images/logo.png" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="app-root">
+  <div class="section-block-head">
+    <h3>Announcements &amp; Advisories</h3>
+  </div>
+  <p style="color:var(--text-muted);font-size:14px;margin:-4px 0 20px">Official announcements, advisories, and upcoming activities from your barangay.</p>
+  <div class="list-stack" id="list"></div>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  ComSol.requireAuth();
+  document.getElementById('list').innerHTML = ComSol.getAnnouncements().map((a, i) => `
+    <div class="list-card" id="post-${a.id || 's' + i}">
+      <div class="lc-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a2 2 0 0 0 2 2h2l6 4V5L7 9H5a2 2 0 0 0-2 2z"/><path d="M17 8a5 5 0 0 1 0 8"/></svg></div>
+      <div class="lc-body">
+        <span class="tag ${a.tag.toLowerCase()}">${a.tag}</span>
+        <div class="lc-title">${a.title}</div>
+        <div class="lc-text">${a.body}</div>
+        <div class="lc-meta"><span>Posted ${ComSol.formatFullDate(a.date)}</span></div>
+      </div>
+    </div>
+  `).join('');
+  renderShell({ active: 'announcements', title: 'Announcements' });
+  ComSol.highlightHash();
+</script>
+</body>
+</html>

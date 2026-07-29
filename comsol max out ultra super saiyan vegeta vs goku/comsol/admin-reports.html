@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="Review and update the status of resident reports." />
+<meta name="robots" content="index,follow" />
+<meta name="theme-color" content="#293681" />
+    <title>Manage Reports — ComSol Admin</title>
+<link rel="icon" href="images/logo.png" type="image/png" />
+<link rel="apple-touch-icon" href="images/logo.png" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div id="app-root">
+      <div class="section-block-head">
+        <h3>Manage Resident Reports</h3>
+      </div>
+      <p style="color: var(--text-muted); font-size: 14px; margin: -4px 0 16px">
+        Review each submission, update its status, and leave a note that
+        residents will see in their tracking timeline.
+      </p>
+
+      <div class="adm-toolbar">
+        <input
+          class="form-input"
+          id="search"
+          placeholder="Search by reference, title, or category…"
+        />
+      </div>
+
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-f="all">All</button>
+        <button class="tab" data-f="pending">Pending</button>
+        <button class="tab" data-f="review">Under Review</button>
+        <button class="tab" data-f="progress">In Progress</button>
+        <button class="tab" data-f="resolved">Resolved</button>
+        <button class="tab" data-f="rejected">Rejected</button>
+      </div>
+
+      <div id="list"></div>
+    </div>
+
+    <!-- Review modal -->
+    <div class="modal-scrim" id="reviewModal">
+      <div class="modal modal-detail" id="reviewBody"></div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/admin.js"></script>
+    <script>
+      ComSol.requireAdmin();
+
+      let filter = "all";
+      let query = "";
+      let activeId = null;
+
+      function visible() {
+        const q = query.toLowerCase();
+        return ComSol.getReports()
+          .filter((r) => filter === "all" || r.status === filter)
+          .filter(
+            (r) =>
+              !q ||
+              [r.ref, r.title, r.category, r.description]
+                .join(" ")
+                .toLowerCase()
+                .includes(q),
+          );
+      }
+
+      function render() {
+        const items = visible();
+        document.getElementById("list").innerHTML = items.length
+          ? `
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Reference</th><th>Report</th><th>Category</th><th>Location</th><th>Submitted</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            ${items
+              .map(
+                (r) => `
+              <tr>
+                <td><span class="ref-chip">${r.ref || "—"}</span></td>
+                <td class="strong">${r.title}</td>
+                <td>${r.category}</td>
+                <td>${r.location || "—"}</td>
+                <td>${ComSol.formatDate(r.date)}</td>
+                <td><span class="badge ${r.status}">${ComSol.statusLabel(r.status)}</span></td>
+                <td><a class="details-link" href="#" data-id="${r.id}">Review →</a></td>
+              </tr>
+            `,
+              )
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    `
+          : `<div class="empty"><p>No reports match this filter.</p></div>`;
+      }
+
+      function openReview(id) {
+        const r = ComSol.getReports().find((x) => String(x.id) === String(id));
+        if (!r) return;
+        activeId = r.id;
+        const history = (r.history || []).slice().reverse();
+        const options = [
+          "pending",
+          "review",
+          "progress",
+          "resolved",
+          "rejected",
+        ];
+
+        document.getElementById("reviewBody").innerHTML = `
+      ${r.image ? `<img src="${r.image}" alt="Report photo" loading="lazy" decoding="async" style="object-position:${r.imagePos || "50% 50%"}" />` : ""}
+      <h3 style="text-align:left;margin-bottom:4px">${r.title}</h3>
+      <p style="text-align:left;margin-bottom:14px;color:var(--text-muted);font-size:13px">
+        <span class="badge ${r.status}">${ComSol.statusLabel(r.status)}</span>
+        &nbsp;·&nbsp; ${r.category}
+        &nbsp;·&nbsp; <span class="ref-chip">${r.ref || ""}</span>
+      </p>
+      <dl>
+        <dt>Description</dt><dd style="grid-column:1 / -1">${r.description || "—"}</dd>
+        <dt>Location</dt><dd>${r.location || "—"}</dd>
+        <dt>Submitted</dt><dd>${new Date(r.date).toLocaleString()}</dd>
+      </dl>
+
+      <h4 class="modal-sub">Update Status</h4>
+      <div class="form-group">
+        <label class="form-label">New status</label>
+        <select class="form-select form-input" id="newStatus">
+          ${options.map((o) => `<option value="${o}" ${o === r.status ? "selected" : ""}>${ComSol.statusLabel(o)}</option>`).join("")}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Note to the resident <span style="color:var(--text-muted);font-weight:500">(shown in their timeline)</span></label>
+        <textarea class="form-textarea form-input" id="statusNote" placeholder="e.g. Verified on site — repair crew scheduled Thursday." maxlength="300"></textarea>
+      </div>
+
+      <h4 class="modal-sub">History &amp; Updates</h4>
+      <div class="timeline">
+        ${history
+          .map(
+            (h, i) => `
+          <div class="timeline-item ${i === 0 && (h.status === "resolved" || h.status === "rejected") ? "done" : ""}">
+            <div class="tl-status">${ComSol.statusLabel(h.status)}${h.by === "admin" ? " · Admin" : ""}</div>
+            <div class="tl-date">${ComSol.formatFullDate(h.ts)}</div>
+            <div class="tl-note">${h.note || ""}</div>
+          </div>
+        `,
+          )
+          .join("")}
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="closeReview">Cancel</button>
+        <button class="btn" id="saveReview">Save Update</button>
+      </div>
+    `;
+        document.getElementById("reviewModal").classList.add("open");
+
+        document
+          .getElementById("closeReview")
+          .addEventListener("click", closeReview);
+        document.getElementById("saveReview").addEventListener("click", () => {
+          const status = document.getElementById("newStatus").value;
+          const note = document.getElementById("statusNote").value.trim();
+          if (status === "rejected" && !note) {
+            ComSol.toast("Please add a reason before rejecting this report.");
+            return;
+          }
+          ComSol.updateReportStatus(activeId, status, note);
+          closeReview();
+          render();
+          ComSol.toast(
+            "Report updated — the resident can now see this change.",
+          );
+        });
+      }
+
+      function closeReview() {
+        document.getElementById("reviewModal").classList.remove("open");
+        activeId = null;
+      }
+
+      function bind() {
+        document.getElementById("tabs").addEventListener("click", (e) => {
+          const b = e.target.closest(".tab");
+          if (!b) return;
+          document
+            .querySelectorAll("#tabs .tab")
+            .forEach((t) => t.classList.remove("active"));
+          b.classList.add("active");
+          filter = b.dataset.f;
+          render();
+        });
+
+        document.getElementById("search").addEventListener("input", (e) => {
+          query = e.target.value.trim();
+          render();
+        });
+
+        document.getElementById("list").addEventListener("click", (e) => {
+          const a = e.target.closest(".details-link");
+          if (!a) return;
+          e.preventDefault();
+          openReview(a.dataset.id);
+        });
+
+        document
+          .getElementById("reviewModal")
+          .addEventListener("click", (e) => {
+            if (e.target.id === "reviewModal") closeReview();
+          });
+      }
+
+      renderAdminShell({ active: "reports", title: "Manage Reports" });
+      render();
+      bind();
+
+      // Deep link from the dashboard queue: /admin-reports.html?ref=CS-2026-0004
+      const ref = new URLSearchParams(location.search).get("ref");
+      if (ref) {
+        const match = ComSol.getReports().find((r) => r.ref === ref);
+        if (match) openReview(match.id);
+      }
+    </script>
+  </body>
+</html>

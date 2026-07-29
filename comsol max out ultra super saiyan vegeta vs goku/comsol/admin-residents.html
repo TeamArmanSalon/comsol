@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="Manage registered resident accounts." />
+<meta name="robots" content="index,follow" />
+<meta name="theme-color" content="#293681" />
+    <title>Manage Residents — ComSol Admin</title>
+<link rel="icon" href="images/logo.png" type="image/png" />
+<link rel="apple-touch-icon" href="images/logo.png" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div id="app-root">
+      <div class="section-block-head"><h3>Registered Residents</h3></div>
+      <p style="color: var(--text-muted); font-size: 14px; margin: -4px 0 16px">
+        Every account registered on the resident site. Suspend an account to
+        block it from signing in, or remove it entirely.
+      </p>
+
+      <div class="stats-grid" id="uStats"></div>
+
+      <div class="adm-toolbar" style="margin-top: 20px">
+        <input
+          class="form-input"
+          id="search"
+          placeholder="Search by name or email…"
+        />
+      </div>
+
+      <div id="list"></div>
+    </div>
+
+    <!-- Resident detail modal -->
+    <div class="modal-scrim" id="userModal">
+      <div class="modal modal-detail" id="userBody"></div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/admin.js"></script>
+    <script>
+      ComSol.requireAdmin();
+      // Build the admin shell first so every listener below binds to live nodes.
+      renderAdminShell({ active: "residents", title: "Manage Residents" });
+
+      let query = "";
+
+      function visible() {
+        const q = query.toLowerCase();
+        return ComSol.getUsers().filter(
+          (u) => !q || `${u.name} ${u.email}`.toLowerCase().includes(q),
+        );
+      }
+
+      function renderStats() {
+        const all = ComSol.getUsers();
+        document.getElementById("uStats").innerHTML = [
+          { lbl: "Total Residents", val: all.length, cls: "" },
+          {
+            lbl: "Active",
+            val: all.filter((u) => u.active !== false).length,
+            cls: "resolved",
+          },
+          {
+            lbl: "Suspended",
+            val: all.filter((u) => u.active === false).length,
+            cls: "pending",
+          },
+        ]
+          .map(
+            (c) => `
+        <div class="stat-card ${c.cls}">
+          <div class="lbl">${c.lbl}</div>
+          <div class="val">${c.val}</div>
+        </div>`,
+          )
+          .join("");
+      }
+
+      function render() {
+        const items = visible();
+        document.getElementById("list").innerHTML = items.length
+          ? `
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Resident</th><th>Email</th><th>Phone</th><th>Registered</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              ${items
+                .map(
+                  (u) => `
+                <tr>
+                  <td class="strong">${u.name}</td>
+                  <td>${u.email}</td>
+                  <td>${u.phone || "—"}</td>
+                  <td>${ComSol.formatDate(u.joined)}</td>
+                  <td><span class="badge ${u.active === false ? "rejected" : "resolved"}">${u.active === false ? "Suspended" : "Active"}</span></td>
+                  <td><a class="details-link" href="#" data-id="${u.id}">View →</a></td>
+                </tr>`,
+                )
+                .join("")}
+            </tbody>
+          </table>
+        </div>`
+          : `<div class="empty"><p>No residents match this search.</p></div>`;
+        renderStats();
+      }
+
+      function openUser(id) {
+        const u = ComSol.getUsers().find((x) => String(x.id) === String(id));
+        if (!u) return;
+        const suspended = u.active === false;
+        document.getElementById("userBody").innerHTML = `
+        <h3 style="text-align:left;margin-bottom:4px">${u.name}</h3>
+        <p style="text-align:left;margin-bottom:14px">
+          <span class="badge ${suspended ? "rejected" : "resolved"}">${suspended ? "Suspended" : "Active"}</span>
+        </p>
+        <dl>
+          <dt>Email</dt><dd>${u.email}</dd>
+          <dt>Phone</dt><dd>${u.phone || "—"}</dd>
+          <dt>Address</dt><dd>${u.address || "—"}</dd>
+          <dt>Registered</dt><dd>${ComSol.formatFullDate(u.joined)}</dd>
+        </dl>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="closeUser">Close</button>
+          <button class="btn btn-ghost" id="toggleUser">${suspended ? "Reactivate" : "Suspend"}</button>
+          <button class="btn btn-danger" id="removeUser">Remove</button>
+        </div>`;
+        document.getElementById("userModal").classList.add("open");
+
+        document
+          .getElementById("closeUser")
+          .addEventListener("click", closeUser);
+        document.getElementById("toggleUser").addEventListener("click", () => {
+          ComSol.setUserActive(u.id, suspended);
+          closeUser();
+          render();
+          ComSol.toast(
+            suspended ? "Account reactivated." : "Account suspended.",
+          );
+        });
+        document.getElementById("removeUser").addEventListener("click", () => {
+          if (!confirm(`Remove ${u.name}'s account?`)) return;
+          ComSol.deleteUser(u.id);
+          closeUser();
+          render();
+          ComSol.toast("Resident account removed.");
+        });
+      }
+
+      function closeUser() {
+        document.getElementById("userModal").classList.remove("open");
+      }
+
+      document.getElementById("search").addEventListener("input", (e) => {
+        query = e.target.value.trim();
+        render();
+      });
+      document.getElementById("list").addEventListener("click", (e) => {
+        const a = e.target.closest(".details-link");
+        if (!a) return;
+        e.preventDefault();
+        openUser(a.dataset.id);
+      });
+      document.getElementById("userModal").addEventListener("click", (e) => {
+        if (e.target.id === "userModal") closeUser();
+      });
+
+      render();
+    </script>
+  </body>
+</html>
