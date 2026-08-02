@@ -153,6 +153,6 @@ function renderAdminShell({ active, title }) {
   });
   document.getElementById("sb-logout").addEventListener("click", (e) => {
     e.preventDefault();
-    if (confirm("Log out of the admin panel?")) ComSol.adminLogout();
+    if (confirm("Log out")) ComSol.adminLogout();
   });
 }
