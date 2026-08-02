@@ -245,7 +245,7 @@ function renderShell({ active, title }) {
 
   document.getElementById("popLogout").addEventListener("click", (e) => {
     e.preventDefault();
-    if (confirm("Log out of ComSol?")) ComSol.logout();
+    if (confirm("Log out")) ComSol.logout();
   });
 
   /* ---------------- Notifications ---------------- */
